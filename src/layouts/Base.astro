@@ -17,7 +17,7 @@ const isPreview = href('') !== '/';
 const image = site.ogImage ? new URL(site.ogImage, base).href : '';
 ---
 <!doctype html>
-<html lang={site.locale} data-theme="light" style={`--brand:${site.brand}`}>
+<html lang={site.locale} data-theme="light" data-skin={site.skin} style={`--brand:${site.brand}`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
