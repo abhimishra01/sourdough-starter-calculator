@@ -1,0 +1,14 @@
+---
+import Page from '../layouts/Page.astro';
+import site from '../site.config.ts';
+---
+<Page title="About" description={`About the ${site.name}, a free sourdough starter feeding calculator.`}>
+  <p>{site.name} is a free sourdough starter feeding calculator. You choose a feeding ratio and an amount. It gives you the grams of starter, flour and water to use, and a rough time for the starter to peak.</p>
+  <h2>Why we built it</h2>
+  <p>Feeding a starter means doing the same small sum every day. Many calculators for this are slow, hard to use on a phone, or skip hydration and flour mixes. We wanted one that opens fast, works with one hand in a messy kitchen, and does this one job well.</p>
+  <h2>How it works</h2>
+  <p>The calculator runs in your browser. We do not ask you to create an account. Your last settings stay on your own device so they are ready next time.</p>
+  <p>The peak time is a rough guide. It uses the feeding ratio and your kitchen temperature. Real starters differ, so watch your jar.</p>
+  <h2>Contact</h2>
+  <p>Questions or ideas? Write to <a href={`mailto:${site.email}`}>{site.email}</a> or visit the <a href="/contact/">Contact page</a>.</p>
+</Page>
