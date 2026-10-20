@@ -7,3 +7,4 @@ tmp-*/
 .playwright-cli/
 screenshots/
 .DS_Store
+dist-bingemind/

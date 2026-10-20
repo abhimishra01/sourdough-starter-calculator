@@ -11,10 +11,10 @@ const { title, description = site.description, jsonLd = [], noindex = false } = 
 const fullTitle = title ? `${title} | ${site.name}` : (site.title ?? `${site.name}: ${site.keyword} (${site.tagline})`);
 const base = `https://${site.domain}`;
 // The canonical URL always points at the real domain, even on the GitHub Pages copy.
-const canonical = new URL(pathWithoutBase(Astro.url.pathname), base).href;
+const canonical = `${base}${pathWithoutBase(Astro.url.pathname)}`;
 // The GitHub Pages copy is a preview: keep it out of search results.
 const isPreview = href('') !== '/';
-const image = site.ogImage ? new URL(site.ogImage, base).href : '';
+const image = site.ogImage ? `${base}${site.ogImage}` : '';
 ---
 <!doctype html>
 <html lang={site.locale} data-theme="light" data-skin={site.skin} style={`--brand:${site.brand}`}>
@@ -30,7 +30,8 @@ const image = site.ogImage ? new URL(site.ogImage, base).href : '';
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content={site.brand} />
-    {(noindex || isPreview) && <meta name="robots" content="noindex" />}
+    {(noindex || (isPreview && !site.bingemind)) && <meta name="robots" content="noindex" />}
+    {!noindex && (site.bingemind || !isPreview) && <meta name="robots" content="index,follow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" href={href('favicon.svg')} type="image/svg+xml" />
     <link rel="icon" href={href('favicon-32.png')} type="image/png" sizes="32x32" />
