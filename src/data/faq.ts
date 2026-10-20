@@ -22,7 +22,7 @@ export const faq = [
   },
   {
     q: 'How much starter do I discard before feeding?',
-    a: 'Keep only the amount you enter under Starter I keep (grams) and discard the rest. You can bake with the discard, for example in pancakes or crackers. A small amount of starter in a large feed gives the longest wait before the peak.',
+    a: 'Keep only the amount you enter under Starter I keep (grams) and discard the rest. Type the weight of your jar into Starter in my jar now, and the Discard card tells you the exact amount. You can bake with the discard, for example in pancakes or crackers. A small amount of starter in a large feed gives the longest wait before the peak.',
   },
   {
     q: 'Can I measure starter, flour and water in cups?',

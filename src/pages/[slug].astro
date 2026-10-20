@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import Tool from '../components/Tool.astro';
+import site from '../site.config.ts';
+import { landing } from '../data/landing.ts';
+import { href } from '../lib/url.js';
+
+export function getStaticPaths() {
+  return landing.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+const { page } = Astro.props;
+const others = landing.filter((l) => l.slug !== page.slug);
+const base = `https://${site.domain}`;
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: page.qa.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: site.name, item: `${base}/` },
+      { '@type': 'ListItem', position: 2, name: page.h1, item: `${base}/${page.slug}/` },
+    ],
+  },
+];
+---
+<Base title={page.title} description={page.description} jsonLd={jsonLd}>
+  <section class="mx-auto max-w-5xl px-4 pt-5 sm:pt-14">
+    <p class="mb-3 text-sm"><a href={href('')} class="text-muted underline underline-offset-4 hover:text-ink">&larr; {site.name}</a></p>
+    <h1 class="serif max-w-3xl text-3xl font-bold leading-[1.08] tracking-tight [text-wrap:balance] sm:text-5xl">{page.h1}</h1>
+    <p class="mt-3 max-w-2xl text-base text-muted sm:text-lg">{page.lead}</p>
+    <div class="mt-6 sm:mt-8"><Tool preset={page.preset} /></div>
+  </section>
+  <section class="mx-auto max-w-5xl px-4 pt-16" aria-label="Details">
+    <article class="prose-site">
+      <h2 style="margin-top:0">The numbers</h2>
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">{page.table.caption}</caption>
+          <thead><tr>{page.table.head.map((h) => <th scope="col">{h}</th>)}</tr></thead>
+          <tbody>
+            {page.table.rows.map((row) => <tr>{row.map((c, i) => (i === 0 ? <th scope="row">{c}</th> : <td>{c}</td>))}</tr>)}
+          </tbody>
+        </table>
+      </div>
+      <p>Amounts use 100% hydration and white flour. Change hydration or the flour mix in the tool above.</p>
+      {page.sections.map((s) => (<><h2>{s.h}</h2>{s.p.map((t) => <p>{t}</p>)}</>))}
+      <h2>Quick answers</h2>
+      {page.qa.map((f) => (<><h3>{f.q}</h3><p>{f.a}</p></>))}
+      <h2>More feeding guides</h2>
+      <ul>
+        <li><a href={href('')}>Sourdough starter feeding calculator</a></li>
+        {others.map((o) => <li><a href={href(`${o.slug}/`)}>{o.h1.charAt(0).toUpperCase() + o.h1.slice(1)}</a></li>)}
+      </ul>
+    </article>
+  </section>
+</Base>

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { computeFeed, roundToSum, peakTime, formatHours, gramsToCups, fToC, cToF, nextAmount, feedNote, ratioHint, peakNote, peakText } from '../src/lib/starter.js';
+import { computeFeed, roundToSum, peakTime, formatHours, gramsToCups, fToC, cToF, nextAmount, feedNote, ratioHint, peakNote, peakText, jarLine, parseClock, formatClock, peakClock, feedClock, waitHours, suggestRatio, clockText, gramsToOz, RATIO_KEYS } from '../src/lib/starter.js';
 
 let n = 0;
 const t = (name, fn) => { fn(); n++; console.log('ok', name); };
@@ -173,4 +173,49 @@ t('peak text and note: one source of truth for the thresholds', () => {
   assert.match(peakNote(peakTime(11, fToC(100)), 100, 'F', 0), /^Above 95 °F \(35 °C\)/);
   assert.match(peakNote(peakTime(11, 24), 24, 'C', 40), /Whole grain/);
 });
+
+t('jar: discard, keep and add line', () => {
+  const r = computeFeed({ ...base, amount: 20, jar: 300 });
+  assert.equal(r.discard, 280); assert.equal(r.short, 0);
+  assert.equal(jarLine(r), 'Keep 20 g. Discard 280 g. Add 100 g flour and 100 g water. Total 220 g.');
+});
+t('jar: short jar and exact jar', () => {
+  const s = computeFeed({ ...base, amount: 50, jar: 30 });
+  assert.equal(s.short, 20); assert.equal(s.discard, 0); assert.match(jarLine(s), /20 g short/);
+  const e = computeFeed({ ...base, amount: 50, jar: 50 });
+  assert.match(jarLine(e), /Discard nothing/);
+});
+t('jar: empty means not given, bad values are refused', () => {
+  for (const j of ['', undefined, null, NaN]) assert.equal(computeFeed({ ...base, jar: j }).jar, null);
+  assert.equal(jarLine(computeFeed(base)), null);
+  const bad = computeFeed({ ...base, jar: -5 });
+  assert.equal(bad.ok, false); assert.equal(bad.field, 'jar');
+  assert.equal(computeFeed({ ...base, jar: 0 }).short, 50);
+});
+t('1:3:3 and 1:4:4 presets', () => {
+  assert.ok(RATIO_KEYS.includes('1:3:3') && RATIO_KEYS.includes('1:4:4'));
+  const r = computeFeed({ ...base, amount: 20, ratio: '1:3:3' });
+  assert.deepEqual([r.flour.total, r.water], [60, 60]);
+});
+t('clock helpers', () => {
+  assert.equal(parseClock('21:30'), 1290); assert.ok(Number.isNaN(parseClock('')));
+  assert.ok(Number.isNaN(parseClock('25:00')));
+  assert.equal(formatClock(0), '12 am'); assert.equal(formatClock(12 * 60 + 15), '12:15 pm'); assert.equal(formatClock(21.5 * 60), '9:30 pm');
+  assert.equal(formatClock(26 * 60), '2 am'); assert.equal(formatClock(-60), '11 pm');
+  assert.equal(peakClock(21.5 * 60, 8, 10), '5:30 am to 7:30 am');
+  assert.equal(feedClock(7 * 60, 8, 10), '9 pm to 11 pm');
+  assert.equal(waitHours(21.5 * 60, 7 * 60), 9.5); assert.equal(waitHours(60, 60), 0);
+});
+t('clock text and ratio suggestion', () => {
+  const pk = peakTime(11, fToC(75));
+  const text = clockText({ pk, tC: fToC(75), fed: 21.5 * 60, ready: NaN, ratio: '1:5:5' });
+  assert.match(text, /^Fed at 9:30 pm: peak around/);
+  assert.equal(clockText({ pk: peakTime(11, fToC(40)), tC: fToC(40), fed: 0, ready: 0, ratio: '1:5:5' }), '');
+  assert.equal(clockText({ pk, tC: fToC(75), fed: NaN, ready: NaN, ratio: '1:5:5' }), '');
+  assert.equal(suggestRatio(4, fToC(77)).key, '1:1:1');
+  assert.equal(suggestRatio(12, fToC(77)).key, '1:10:10');
+  assert.equal(suggestRatio(5, fToC(10)), null);
+});
+t('ounces', () => { assert.equal(gramsToOz(250), '8.8 oz'); assert.equal(gramsToOz(28.3495), '1 oz'); });
+
 console.log(`${n} tests passed`);

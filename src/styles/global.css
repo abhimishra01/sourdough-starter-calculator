@@ -51,6 +51,7 @@ body { background: var(--paper); color: var(--ink); font-family: var(--font-sans
 /* Long-form text: used by article and legal pages */
 .prose-site { max-width: 68ch; line-height: 1.7; font-size: 1.0625rem; }
 .prose-site h2 { font-size: 1.5rem; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; margin: 2.25rem 0 0.75rem; text-wrap: balance; }
+.prose-site h3 { font-size: 1.125rem; font-weight: 650; margin: 1.25rem 0 0.35rem; }
 .prose-site p, .prose-site ul, .prose-site ol { margin: 0 0 1rem; }
 .prose-site ul { list-style: disc; padding-left: 1.25rem; }
 .prose-site ol { list-style: decimal; padding-left: 1.25rem; }
@@ -66,8 +67,7 @@ body { background: var(--paper); color: var(--ink); font-family: var(--font-sans
 .seg span { display: flex; min-height: 2.75rem; align-items: center; justify-content: center; padding: 0 0.75rem; border-radius: 999px; font-size: 0.9375rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
 .seg input:checked + span { background: var(--brand); color: #fff; }
 
-.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
-@media (min-width: 40rem) { .tiles { grid-template-columns: repeat(5, 1fr); } }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
 .tiles span { display: flex; min-height: 2.75rem; align-items: center; justify-content: center; border: 1px solid var(--edge); border-radius: 0.75rem; background: var(--paper); font-weight: 600; font-variant-numeric: tabular-nums; }
 .tiles input:checked + span { border-color: var(--brand); background: var(--brand); color: #fff; }
 .seg input:focus-visible + span, .tiles input:focus-visible + span { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
@@ -101,4 +101,10 @@ input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-i
 @media print {
   header, footer, #faq-h, #faq-h ~ div, #sticky-bar, #theme-toggle, .chip, .step-btn { display: none !important; }
   body { background: #fff; color: #000; }
+  /* Fridge card: print the heading and the result card only */
+  main > :not(:first-child) { display: none !important; }
+  main > :first-child > :not(h1):not(#tool) { display: none !important; }
+  #tool > :not(#result) { display: none !important; }
+  #result { position: static !important; border: 2px solid #000 !important; background: #fff !important; }
+  #result button, #result fieldset, #copy-status, #cups-note { display: none !important; }
 }

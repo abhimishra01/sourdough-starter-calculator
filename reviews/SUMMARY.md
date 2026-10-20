@@ -61,3 +61,14 @@ Tailwind: `@import "tailwindcss" source(none); @source "../";`. CSS 117 KB (116K
 18. 50% hydration (stiff) starter feeding
 19. how to scale a starter for a recipe (total I need)
 20. sourdough starter feeding ratio for a warm or cold kitchen
+
+## Gap fix
+Done:
+- Must 1: "Starter in my jar now" input and a Discard card (keep, discard, add flour and water, total; "short by N g" when the jar is too small).
+- Must 2: opens on 50 g at 1:1:1; added 1:3:3 and 1:4:4 chips; "Total I need" chips (80 to 300 g) with a recipe levain hint.
+- Must 3: "I feed at" and "I want it ready by" clock times; both together suggest the best ratio for the night.
+- Should 4: 10 real landing pages (4 ratios, 50 g, 100 g, discard, overnight, peak by temperature, levain), each with its own title, H1, computed table, hand-written sections, FAQ schema, preset tool; linked from the home page.
+- Should 5, 6, 7: Discard card, ounces (g, oz, cups), share link (settings in the URL hash), print fridge card (heading and result only).
+- Nice 8 (already existed), 9 (one-line ratio explainer with link), 10 (levain label and hint).
+- 38 tests pass, build OK (16 pages), Lighthouse 100 x4 on home, a ratio page and the overnight page. Screenshots: screenshots/gap-*.png.
+Skipped: none. Landing pages skip the saved settings so they open on their own case.

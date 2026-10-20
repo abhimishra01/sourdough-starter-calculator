@@ -2,10 +2,11 @@
 // The text the page shows about a result is built here too, so the first paint (rendered at
 // build time) and the live page (rendered in the browser) always say the same thing.
 
-const PRESETS = { '1:1:1': 1, '1:2:2': 2, '1:5:5': 5, '1:10:10': 10 };
+const PRESETS = { '1:1:1': 1, '1:2:2': 2, '1:3:3': 3, '1:4:4': 4, '1:5:5': 5, '1:10:10': 10 };
 export const RATIO_KEYS = [...Object.keys(PRESETS), 'custom'];
 
 // Rough grams per US cup. Cups vary a lot with how you scoop, so the page says grams are better.
+const GRAMS_PER_OZ = 28.3495;
 const GRAMS_PER_CUP = { starter: 227, white: 120, wheat: 113, rye: 102, water: 237 };
 
 const HYDRATION_MIN = 40;
@@ -37,6 +38,14 @@ export function computeFeed(opts) {
   if (!Number.isFinite(amount) || amount < 1) return fail('Enter an amount of at least 1 gram.', 'amount');
   if (amount > MAX_AMOUNT) return fail('That amount is too large. Try 100,000 g or less.', 'amount');
   const grams = Math.round(amount); // the page works in whole grams
+
+  // Optional: grams of starter in the jar now. Empty means "not given".
+  const jarGiven = !(opts.jar == null || opts.jar === '' || Number.isNaN(Number(opts.jar)));
+  const jarIn = jarGiven ? Number(opts.jar) : null;
+  if (jarGiven && (!Number.isFinite(jarIn) || jarIn < 0 || jarIn > MAX_AMOUNT)) {
+    return fail('Enter the starter in your jar as 0 to 100,000 grams, or leave it empty.', 'jar');
+  }
+  const jar = jarGiven ? Math.round(jarIn) : null;
 
   const wheatPct = Number(opts.mix?.wheat ?? 0);
   const ryePct = Number(opts.mix?.rye ?? 0);
@@ -116,6 +125,9 @@ export function computeFeed(opts) {
     dilution: sumParts / sp, // how many times the starter is diluted by the feeding
     ratioLabel: opts.ratio === 'custom' ? `${round2(sp)}:${round2(fp)}:${round2(wp)}` : opts.ratio,
     wholeGrainShare: wheatPct + ryePct,
+    jar,
+    discard: jar === null ? null : Math.max(0, jar - starter),
+    short: jar === null ? null : Math.max(0, starter - jar),
   };
 }
 
@@ -144,6 +156,30 @@ export function feedNote(res) {
   return res.mode === 'keep'
     ? `Keep ${res.starter} g of starter in the jar and discard the rest. Then add the flour and water. ${ratioText}`
     : `Mix ${res.starter} g of starter with the flour and water to get ${res.total} g. Keep ${res.starter} g in the jar and discard any extra first. ${ratioText} Amounts are rounded to whole grams.`;
+}
+
+/** The discard answer for the jar card. Returns null when the jar weight was not given. */
+export function jarLine(res) {
+  if (res.jar === null) return null;
+  const add = `Add ${res.flour.total} g flour and ${res.water} g water. Total ${res.total} g.`;
+  if (res.short > 0) {
+    return `Your jar has ${res.jar} g. This feeding needs ${res.starter} g of starter, so you are ${res.short} g short. Do not discard anything. Use a smaller amount, or feed the jar first.`;
+  }
+  if (res.discard === 0) return `Your jar has exactly ${res.starter} g. Discard nothing. ${add}`;
+  return `Keep ${res.starter} g. Discard ${res.discard} g. ${add}`;
+}
+
+/** One plain line about what a ratio does. */
+export function ratioFlavor(key) {
+  const m = {
+    '1:1:1': 'Peaks fast, so you feed often. Tangier starter.',
+    '1:2:2': 'A steady middle path. Good for two feedings a day.',
+    '1:3:3': 'Peaks in a half day. Good for a morning and evening routine.',
+    '1:4:4': 'Peaks in a bit under a day at room temperature.',
+    '1:5:5': 'Slower and milder. Suits one feeding a day.',
+    '1:10:10': 'Slowest. Suits an overnight feed or a warm kitchen.',
+  };
+  return m[key] || '';
 }
 
 /** The line under the ratio tiles. */
@@ -204,6 +240,77 @@ export function peakNote(pk, t, unit, wholeGrainShare) {
   if (wholeGrainShare >= 30) msg += ' Whole grain flour often peaks sooner.';
   return msg;
 }
+
+// ---- Clock times ----
+/** "21:30" to minutes after midnight, or NaN. */
+export function parseClock(v) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(v ?? '').trim());
+  if (!m) return NaN;
+  const h = Number(m[1]); const mi = Number(m[2]);
+  return h > 23 || mi > 59 ? NaN : h * 60 + mi;
+}
+
+/** Minutes after midnight (may pass 24 h or go below 0) to "9:30 pm". Rounds to 15 minutes. */
+export function formatClock(min) {
+  const r = Math.round(min / 15) * 15;
+  const day = ((r % 1440) + 1440) % 1440;
+  const h24 = Math.floor(day / 60);
+  const mi = day % 60;
+  const h = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h}${mi ? ':' + String(mi).padStart(2, '0') : ''} ${h24 < 12 ? 'am' : 'pm'}`;
+}
+
+/** Fed at a clock time: "7:30 am to 9:30 am". Pass the peak range in hours. */
+export function peakClock(fedMin, lowH, highH) {
+  return `${formatClock(fedMin + lowH * 60)} to ${formatClock(fedMin + highH * 60)}`;
+}
+
+/** Ready by a clock time: when to feed. The earliest time comes first. */
+export function feedClock(readyMin, lowH, highH) {
+  return `${formatClock(readyMin - highH * 60)} to ${formatClock(readyMin - lowH * 60)}`;
+}
+
+/** Hours from a feed time to a ready time, always 0 to 24 (the next time that clock shows). */
+export function waitHours(fedMin, readyMin) {
+  return ((((readyMin - fedMin) % 1440) + 1440) % 1440) / 60;
+}
+
+/** The preset ratio whose middle peak time is closest to the wait you have. */
+export function suggestRatio(waitH, tempC) {
+  let best = null;
+  for (const key of Object.keys(PRESETS)) {
+    const dilution = 1 + 2 * PRESETS[key];
+    const pk = peakTime(dilution, tempC);
+    if (!pk.ok || pk.cold || pk.hot) return null;
+    const diff = Math.abs(pk.mid - waitH);
+    if (!best || diff < best.diff) best = { key, diff, low: pk.low, high: pk.high };
+  }
+  return best;
+}
+
+/**
+ * Clock-time sentences for the peak card. fed and ready are minutes after midnight, or NaN when empty.
+ * pk comes from peakTime(). Returns '' when there is nothing to say.
+ */
+export function clockText({ pk, tC, fed, ready, ratio }) {
+  if (!pk || !pk.ok || pk.cold || pk.hot) return '';
+  const out = [];
+  if (Number.isFinite(fed)) out.push(`Fed at ${formatClock(fed)}: peak around ${peakClock(fed, pk.low, pk.high)}.`);
+  if (Number.isFinite(ready)) out.push(`To be ready around ${formatClock(ready)}, feed between ${feedClock(ready, pk.low, pk.high)}.`);
+  if (Number.isFinite(fed) && Number.isFinite(ready)) {
+    const w = waitHours(fed, ready);
+    const sug = w > 0 ? suggestRatio(w, tC) : null;
+    if (sug) {
+      out.push(sug.key === ratio
+        ? `You have ${formatHours(w, w)} to wait, and ${ratio} fits.`
+        : `You have ${formatHours(w, w)} to wait. Try ${sug.key}: it peaks in ${formatHours(sug.low, sug.high)}.`);
+    }
+  }
+  return out.join(' ');
+}
+
+/** Grams to ounces text, one decimal. */
+export const gramsToOz = (g) => `${(Math.round((g / GRAMS_PER_OZ) * 10) / 10).toLocaleString('en-US')} oz`;
 
 export const fToC = (f) => ((f - 32) * 5) / 9;
 export const cToF = (c) => (c * 9) / 5 + 32;
