@@ -9,7 +9,9 @@ import { href, pathWithoutBase } from '../lib/url.js';
 
 interface Props { title?: string; description?: string; jsonLd?: object[]; noindex?: boolean; }
 const { title, description = site.description, jsonLd = [], noindex = false } = Astro.props;
-const fullTitle = title ? `${title} | ${site.name}` : (site.title ?? `${site.name}: ${site.keyword} (${site.tagline})`);
+// Search results cut titles near 60 characters, so the site name is added only when it fits.
+const suffixed = (t: string) => (t.length + site.name.length + 3 <= 60 ? `${t} | ${site.name}` : t);
+const fullTitle = title ? suffixed(title) : (site.title ?? `${site.name}: ${site.keyword} (${site.tagline})`);
 const base = `https://${site.domain}`;
 // The canonical URL always points at the real domain, even on the GitHub Pages copy.
 const canonical = `${base}${pathWithoutBase(Astro.url.pathname)}`;
@@ -31,7 +33,7 @@ const image = site.ogImage ? `${base}${site.ogImage}` : '';
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content={site.brand} />
-    {(noindex || (isPreview && !site.bingemind)) && <meta name="robots" content="noindex" />}
+    {(noindex || (isPreview && !site.bingemind)) && <meta name="robots" content="noindex, follow" />}
     {!noindex && (site.bingemind || !isPreview) && <meta name="robots" content="index,follow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" href={href('favicon.svg')} type="image/svg+xml" />
