@@ -1,5 +1,6 @@
 ---
 import Page from '../layouts/Page.astro';
+import { href } from '../lib/url.js';
 import site from '../site.config.ts';
 ---
 <Page title="About" description={`About the ${site.name}, a free sourdough starter feeding calculator.`}>
@@ -10,5 +11,5 @@ import site from '../site.config.ts';
   <p>The calculator runs in your browser. We do not ask you to create an account. Your last settings stay on your own device so they are ready next time.</p>
   <p>The peak time is a rough guide. It uses the feeding ratio and your kitchen temperature. Real starters differ, so watch your jar.</p>
   <h2>Contact</h2>
-  <p>Questions or ideas? Write to <a href={`mailto:${site.email}`}>{site.email}</a> or visit the <a href="/contact/">Contact page</a>.</p>
+  <p>Questions or ideas? Write to <a href={`mailto:${site.email}`}>{site.email}</a> or visit the <a href={href('contact/')}>Contact page</a>.</p>
 </Page>

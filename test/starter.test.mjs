@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { computeFeed, roundToSum, peakTime, formatHours, gramsToCups, fToC, cToF } from '../src/lib/starter.js';
+import { computeFeed, roundToSum, peakTime, formatHours, gramsToCups, fToC, cToF, nextAmount, feedNote, ratioHint, peakNote, peakText } from '../src/lib/starter.js';
 
 let n = 0;
 const t = (name, fn) => { fn(); n++; console.log('ok', name); };
@@ -103,5 +103,74 @@ t('cups', () => {
   assert.equal(gramsToCups(15, 'white'), '2 tbsp');
   assert.equal(gramsToCups(50, 'starter'), '3 \u00BD tbsp');
   assert.equal(gramsToCups(57, 'starter'), '¼ cup');
+});
+
+t('rejects amounts under 1 g and names the field', () => {
+  for (const mode of ['keep', 'total']) {
+    const r = computeFeed({ ...base, mode, amount: 0.4 });
+    assert.equal(r.ok, false); assert.equal(r.field, 'amount');
+  }
+  assert.equal(computeFeed({ ...base, amount: 1 }).ok, true);
+});
+t('total mode rejects a total too small to split', () => {
+  assert.equal(computeFeed({ ...base, mode: 'total', amount: 1, ratio: '1:10:10' }).ok, false);
+  assert.equal(computeFeed({ ...base, mode: 'total', amount: 2, ratio: '1:1:1', mix: { wheat: 20, rye: 0 } }).ok, false);
+});
+t('custom ratio: tiny or lopsided parts are refused, no NaN or Infinity', () => {
+  const c = (s, f, w, amount = 50, mode = 'keep') => computeFeed({ ...base, mode, amount, ratio: 'custom', custom: { s, f, w } });
+  assert.equal(c(0.000000001, 1, 1).ok, false);
+  assert.equal(c(1e-320, 1, 1).ok, false);
+  assert.equal(c(0.001, 4999, 0, 100000).ok, false);
+  assert.equal(c(1, 2000, 1).ok, false);
+  assert.equal(c(1, 4, 4).ok, true);
+  assert.equal(c(0.01, 5, 5, 100000).ok, false); assert.equal(c(0.01, 5, 5, 1000).ok, true);
+});
+t('keep mode rounds the typed amount to whole grams', () => {
+  const r = computeFeed({ ...base, amount: 12.4, ratio: '1:1:1' });
+  assert.deepEqual([r.starter, r.flour.total, r.water], [12, 12, 12]);
+});
+t('wheat + rye just over 100 does not give -0', () => {
+  const r = computeFeed({ ...base, mix: { wheat: 70, rye: 30.00005 } });
+  assert.equal(Object.is(r.flour.white, -0), false);
+});
+t('total mode at 100% hydration: parts differ by at most 1 g and add up', () => {
+  const r = computeFeed({ ...base, mode: 'total', amount: 120, ratio: '1:5:5' });
+  assert.equal(r.total, 120); assert.ok(Math.abs(r.flour.total - r.water) <= 1);
+});
+t('stepper never moves the wrong way and stays at 1 or more', () => {
+  for (const cur of [NaN, 0, 0.5, 1, 3, 5, 12, 49, 50, 190, 200, 250]) {
+    assert.ok(nextAmount(cur, 'up') > (Number.isFinite(cur) ? cur : 0), `up ${cur}`);
+    assert.ok(nextAmount(cur, 'down') >= 1, `down ${cur}`);
+    assert.ok(nextAmount(cur, 'down') <= Math.max(1, Number.isFinite(cur) ? cur : 0), `down ${cur}`);
+  }
+  assert.equal(nextAmount(3, 'down'), 1); assert.equal(nextAmount(200, 'down'), 190); assert.equal(nextAmount(190, 'up'), 200);
+});
+t('cups use fractions a measuring cup has', () => {
+  assert.equal(gramsToCups(29, 'white'), '4 tbsp');
+  assert.equal(gramsToCups(105, 'white'), '¾ cup');
+  assert.equal(gramsToCups(200, 'white'), '1 ⅔ cups');
+  assert.equal(gramsToCups(40, 'white'), '⅓ cup');
+  assert.equal(gramsToCups(237, 'water'), '1 cup');
+  assert.equal(gramsToCups(240, 'white'), '2 cups');
+  for (let g = 30; g < 1500; g += 7) assert.ok(!/[⅛⅜⅝⅞]/.test(gramsToCups(g, 'white')), String(g));
+});
+t('formatHours uses singular for one hour or less', () => {
+  assert.equal(formatHours(0.5, 1), 'about 0.5 to 1 hour');
+});
+t('hint text matches the numbers when hydration is not 100%', () => {
+  const r = computeFeed({ ...base, amount: 50, ratio: '1:5:5', hydration: 80 });
+  assert.match(ratioHint(r), /sets the feed size: 10 parts/);
+  assert.match(ratioHint(r), /5\.6 parts flour and 4\.4 parts water/);
+  assert.match(feedNote(r), /Feed size 1:5:5 at 80% hydration/);
+  const c = computeFeed({ ...base, ratio: 'custom', custom: { s: 1, f: 1, w: 3 } });
+  assert.match(ratioHint(c), /1 part starter, 1 part flour and 3 parts water/);
+  assert.match(feedNote(computeFeed(base)), /^Keep 50 g of starter in the jar/);
+});
+t('peak text and note: one source of truth for the thresholds', () => {
+  assert.equal(peakText(11, 75), 'about 8 to 12 hours');
+  assert.equal(peakText(11, 75, { bare: true }), '8 to 12 hours');
+  assert.match(peakNote(peakTime(11, fToC(50)), 50, 'F', 0), /^Below 59 °F \(15 °C\)/);
+  assert.match(peakNote(peakTime(11, fToC(100)), 100, 'F', 0), /^Above 95 °F \(35 °C\)/);
+  assert.match(peakNote(peakTime(11, 24), 24, 'C', 40), /Whole grain/);
 });
 console.log(`${n} tests passed`);

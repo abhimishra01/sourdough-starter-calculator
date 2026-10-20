@@ -1,11 +1,11 @@
 ---
-import { computeFeed, peakTime, formatHours, fToC } from '../lib/starter.js';
+import { computeFeed, feedNote, ratioHint, peakTime, peakText, peakNote, fToC, RATIO_KEYS } from '../lib/starter.js';
 
 // Default state. The page is rendered with these numbers, so it shows a real answer before any script runs.
-const d = { mode: 'keep', amount: 50, ratio: '1:5:5', hydration: 100, tempF: 75 };
+const d = { mode: 'keep', amount: 50, ratio: '1:5:5', hydration: 100, tempF: 75, custom: { s: 1, f: 4, w: 4 } };
 const r = computeFeed({ mode: d.mode, amount: d.amount, ratio: d.ratio, hydration: d.hydration, mix: { wheat: 0, rye: 0 } });
 const p = peakTime(r.dilution, fToC(d.tempF));
-const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
+const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.water} g water.`;
 ---
 <section id="tool" aria-label="Sourdough starter feeding calculator" class="grid gap-4 lg:grid-cols-2 lg:gap-6">
   <!-- Basics -->
@@ -22,7 +22,7 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
       <label for="amount" id="amount-label" class="lbl">Starter you keep (grams)</label>
       <div class="flex items-center gap-2">
         <button type="button" id="amount-down" class="step-btn" aria-label="Decrease amount">&minus;</button>
-        <input id="amount" class="field text-center text-xl font-semibold" type="number" inputmode="decimal" min="1" step="any" value={d.amount} autocomplete="off" />
+        <input id="amount" class="field text-center text-xl font-semibold" type="number" inputmode="decimal" min="1" step="any" value={d.amount} autocomplete="off" aria-describedby="note" />
         <button type="button" id="amount-up" class="step-btn" aria-label="Increase amount">+</button>
       </div>
       <p id="amount-hint" class="hint">The starter left in the jar after you discard.</p>
@@ -34,21 +34,21 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
     <fieldset class="mt-5">
       <legend class="lbl">Feeding ratio (starter : flour : water)</legend>
       <div class="tiles">
-        {ratios.map((v) => (
+        {RATIO_KEYS.map((v) => (
           <label><input type="radio" name="ratio" value={v} checked={v === d.ratio} /><span>{v === 'custom' ? 'Custom' : v}</span></label>
         ))}
       </div>
       <div id="custom" class="mt-3 grid grid-cols-3 gap-2" hidden>
-        <div><label for="c-s" class="lbl">Starter</label><input id="c-s" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value="1" /></div>
-        <div><label for="c-f" class="lbl">Flour</label><input id="c-f" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value="4" /></div>
-        <div><label for="c-w" class="lbl">Water</label><input id="c-w" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value="4" /></div>
+        <div><label for="c-s" class="lbl">Starter</label><input id="c-s" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value={d.custom.s} aria-describedby="note" /></div>
+        <div><label for="c-f" class="lbl">Flour</label><input id="c-f" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value={d.custom.f} aria-describedby="note" /></div>
+        <div><label for="c-w" class="lbl">Water</label><input id="c-w" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value={d.custom.w} aria-describedby="note" /></div>
       </div>
-      <p id="ratio-hint" class="hint">1:5:5 means 1 part starter, 5 parts flour and 5 parts water, by weight.</p>
+      <p id="ratio-hint" class="hint">{ratioHint(r)}</p>
     </fieldset>
   </div>
 
   <!-- Result -->
-  <div class="rounded-2xl border border-brand/30 bg-brand-soft p-4 sm:p-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start lg:sticky lg:top-20">
+  <div id="result" class="rounded-2xl border border-brand/30 bg-brand-soft p-4 sm:p-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start lg:sticky lg:top-20">
     <div class="flex items-center justify-between gap-3">
       <h2 class="serif text-xl font-bold">Your feeding</h2>
       <fieldset class="w-44 shrink-0">
@@ -60,63 +60,60 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
       </fieldset>
     </div>
 
-    <div aria-live="polite" aria-atomic="true">
+    <p id="live" class="sr-only" aria-live="polite" aria-atomic="true">{liveText}</p>
+    <div>
       <dl class="mt-4 divide-y divide-line rounded-xl border border-line bg-card">
         <div class="flex items-baseline justify-between gap-3 px-4 py-3">
-          <dt class="font-medium">Ripe starter</dt>
+          <dt class="font-medium">Starter</dt>
           <dd id="out-starter" class="serif text-3xl font-bold tabular-nums">{r.starter} g</dd>
         </div>
-        <div class="px-4 py-3">
-          <div class="flex items-baseline justify-between gap-3">
-            <dt class="font-medium">Flour</dt>
-            <dd id="out-flour" class="serif text-3xl font-bold tabular-nums">{r.flour.total} g</dd>
-          </div>
-          <div id="flour-split" class="mt-2 space-y-1 text-sm text-muted" hidden>
-            <div class="flex justify-between"><span>White flour</span><span id="out-white" class="tabular-nums"></span></div>
-            <div class="flex justify-between" id="row-wheat"><span>Whole wheat flour</span><span id="out-wheat" class="tabular-nums"></span></div>
-            <div class="flex justify-between" id="row-rye"><span>Rye flour</span><span id="out-rye" class="tabular-nums"></span></div>
-          </div>
+        <div class="flex items-baseline justify-between gap-3 px-4 py-3">
+          <dt class="font-medium">Flour</dt>
+          <dd id="out-flour" class="serif text-3xl font-bold tabular-nums">{r.flour.total} g</dd>
         </div>
+        <div id="row-white" class="flex justify-between gap-3 py-2 pl-8 pr-4 text-sm text-muted" hidden><dt>White flour</dt><dd id="out-white" class="tabular-nums"></dd></div>
+        <div id="row-wheat" class="flex justify-between gap-3 py-2 pl-8 pr-4 text-sm text-muted" hidden><dt>Whole wheat flour</dt><dd id="out-wheat" class="tabular-nums"></dd></div>
+        <div id="row-rye" class="flex justify-between gap-3 py-2 pl-8 pr-4 text-sm text-muted" hidden><dt>Rye flour</dt><dd id="out-rye" class="tabular-nums"></dd></div>
         <div class="flex items-baseline justify-between gap-3 px-4 py-3">
           <dt class="font-medium">Water</dt>
           <dd id="out-water" class="serif text-3xl font-bold tabular-nums">{r.water} g</dd>
         </div>
         <div class="flex items-baseline justify-between gap-3 px-4 py-3">
-          <dt class="font-medium text-muted">Total after feeding</dt>
+          <dt class="font-medium text-muted">Total after feeding (grams)</dt>
           <dd id="out-total" class="serif text-xl font-semibold tabular-nums text-muted">{r.total} g</dd>
         </div>
       </dl>
 
-      <p id="note" class="mt-3 min-h-[4.25rem] text-sm leading-relaxed text-muted">Discard all but {r.starter} g of starter, then add the flour and water. Ratio {r.ratioLabel} by weight, {Math.round(r.hydration)}% hydration.</p>
+      <p id="note" class="mt-3 min-h-[5.5rem] text-sm leading-relaxed text-muted">{feedNote(r)}</p>
 
       <div class="mt-3 rounded-xl border border-line bg-card px-4 py-3">
         <p class="text-sm font-semibold">Rough peak time</p>
-        <p id="peak" class="serif mt-0.5 text-2xl font-bold">{formatHours(p.low, p.high)}</p>
-        <p id="peak-note" class="mt-1 min-h-[4rem] text-sm leading-relaxed text-muted">At {d.tempF} &deg;F. A guide only: your flour, starter and kitchen will change it. Watch the jar, not the clock.</p>
+        <p id="peak" class="serif mt-0.5 text-2xl font-bold">{peakText(r.dilution, d.tempF)}</p>
+        <p id="peak-note" class="mt-1 min-h-[4rem] text-sm leading-relaxed text-muted">{peakNote(p, d.tempF, 'F', 0)}</p>
       </div>
     </div>
 
     <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-      <p id="cups-note" class="min-w-0 flex-1 basis-48 text-xs text-muted" hidden>Cups are a guess. A cup of flour can weigh 100 to 150 g. Grams are better.</p>
+      <p id="cups-note" class="min-w-0 flex-1 basis-48 text-sm text-muted" hidden>Cups are a guess. A cup of flour can weigh 100 to 150 g. Grams are better. The total stays in grams.</p>
       <button type="button" id="copy" class="chip ml-auto whitespace-nowrap">Copy amounts</button>
     </div>
-    <p id="copy-status" class="sr-only" role="status"></p>
+    <p id="copy-status" class="min-h-5 text-right text-sm text-muted" role="status"></p>
   </div>
 
   <!-- Fine-tune -->
   <div class="rounded-2xl border border-line bg-card p-4 sm:p-6 lg:col-start-1 lg:row-start-2">
     <h2 class="serif text-xl font-bold">Fine-tune</h2>
 
-    <div class="mt-4">
+    <div id="hyd-block" class="mt-4">
       <label for="hydration" class="lbl">Hydration (water as % of flour)</label>
-      <input id="hydration" class="field" type="number" inputmode="decimal" min="40" max="150" step="any" value={d.hydration} autocomplete="off" />
+      <input id="hydration" class="field" type="number" inputmode="decimal" min="40" max="150" step="any" value={d.hydration} autocomplete="off" aria-describedby="note" />
       <div class="mt-2 flex flex-wrap gap-2" role="group" aria-label="Common hydration values">
         {[100, 80, 60].map((n) => <button type="button" class="chip" data-hydration={n} aria-pressed={n === d.hydration ? 'true' : 'false'}>{n}%{n === 100 ? ' liquid' : n === 60 ? ' stiff' : ''}</button>)}
       </div>
-      <p id="hyd-hint" class="hint">100% means equal flour and water. Used with the preset ratios.</p>
+      <p class="hint">100% means equal flour and water. Used with the preset ratios.</p>
     </div>
 
-    <div class="mt-5">
+    <div id="temp-block" class="mt-5">
       <label for="temp" class="lbl">Kitchen temperature</label>
       <div class="flex items-center gap-2">
         <input id="temp" class="field" type="number" inputmode="decimal" step="any" value={d.tempF} autocomplete="off" />
@@ -138,14 +135,15 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
       </summary>
       <div class="px-4 pb-4">
         <div class="flex flex-wrap gap-2" role="group" aria-label="Flour mix presets">
+          <!-- data-mix is "whole wheat %,rye %" -->
           <button type="button" class="chip" data-mix="0,0" aria-pressed="true">All white</button>
           <button type="button" class="chip" data-mix="20,0" aria-pressed="false">80% white, 20% whole wheat</button>
-          <button type="button" class="chip" data-mix="50,0" aria-pressed="false">50 / 50 whole wheat</button>
+          <button type="button" class="chip" data-mix="50,0" aria-pressed="false">50% white, 50% whole wheat</button>
           <button type="button" class="chip" data-mix="0,10" aria-pressed="false">90% white, 10% rye</button>
         </div>
         <div class="mt-3 grid grid-cols-2 gap-3">
-          <div><label for="wheat" class="lbl">Whole wheat %</label><input id="wheat" class="field" type="number" inputmode="decimal" min="0" max="100" step="any" value="0" /></div>
-          <div><label for="rye" class="lbl">Rye %</label><input id="rye" class="field" type="number" inputmode="decimal" min="0" max="100" step="any" value="0" /></div>
+          <div><label for="wheat" class="lbl">Whole wheat %</label><input id="wheat" class="field" type="number" inputmode="decimal" min="0" max="100" step="any" value="0" aria-describedby="note" /></div>
+          <div><label for="rye" class="lbl">Rye %</label><input id="rye" class="field" type="number" inputmode="decimal" min="0" max="100" step="any" value="0" aria-describedby="note" /></div>
         </div>
         <p id="white-pct" class="hint">White flour (all-purpose or bread): 100%</p>
       </div>
@@ -153,8 +151,17 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
   </div>
 </section>
 
+<!-- Phone only: keeps the answer on screen while you change the inputs above it. Hidden while the result card shows. -->
+<div id="sticky-bar" aria-hidden="true" class="fixed inset-x-0 bottom-0 z-20 border-t border-brand/30 bg-brand-soft/95 px-4 py-2 backdrop-blur lg:hidden">
+  <div class="mx-auto flex max-w-5xl justify-between gap-3 text-center">
+    <div><div class="text-xs text-muted">Starter</div><div id="bar-starter" class="serif text-lg font-bold tabular-nums">{r.starter} g</div></div>
+    <div><div class="text-xs text-muted">Flour</div><div id="bar-flour" class="serif text-lg font-bold tabular-nums">{r.flour.total} g</div></div>
+    <div><div class="text-xs text-muted">Water</div><div id="bar-water" class="serif text-lg font-bold tabular-nums">{r.water} g</div></div>
+  </div>
+</div>
+
 <script>
-  import { computeFeed, peakTime, formatHours, gramsToCups, fToC, cToF } from '../lib/starter.js';
+  import { computeFeed, feedNote, ratioHint, peakTime, peakText, peakNote, gramsToCups, fToC, cToF, nextAmount } from '../lib/starter.js';
 
   const $ = (id) => document.getElementById(id);
   const radio = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value;
@@ -163,8 +170,10 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
   const KEY = 'ssc-v1';
   const FIELDS = ['amount', 'c-s', 'c-f', 'c-w', 'hydration', 'temp', 'wheat', 'rye'];
   const RADIOS = ['mode', 'ratio', 'unit', 'tunit'];
+  const FLAGGED = { amount: ['amount'], custom: ['c-s', 'c-f', 'c-w'], hydration: ['hydration'], mix: ['wheat', 'rye'] };
   const NA = '–';
-  const state = { res: null, lastTunit: 'F' };
+  // tC holds the exact temperature in Celsius, so switching units back and forth does not drift.
+  const state = { res: null, tC: NaN, text: '' };
 
   function save() {
     try {
@@ -186,6 +195,18 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
   const fmtG = (n) => `${n.toLocaleString('en-US')} g`;
   const show = (n, kind, unit) => (unit === 'cups' ? gramsToCups(n, kind) : fmtG(n));
 
+  function readTemp() {
+    const t = num('temp');
+    state.tC = radio('tunit') === 'F' ? fToC(t) : t;
+  }
+
+  // Screen readers hear one short sentence, and only after typing pauses.
+  let liveTimer;
+  function announce(text) {
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => { $('live').textContent = text; }, 400);
+  }
+
   function render() {
     const mode = radio('mode');
     const ratio = radio('ratio');
@@ -199,15 +220,12 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
       ? 'The starter left in the jar after you discard.'
       : 'The weight of fed starter you want, for example what a recipe needs.';
     $('custom').hidden = ratio !== 'custom';
-    $('hydration').disabled = ratio === 'custom';
-    $('hyd-hint').textContent = ratio === 'custom'
-      ? 'Set by your custom flour and water parts.'
-      : '100% means equal flour and water. Used with the preset ratios.';
+    $('hyd-block').hidden = ratio === 'custom';
     $('white-pct').textContent = `White flour (all-purpose or bread): ${Math.max(0, Math.round((100 - wheat - rye) * 10) / 10)}%`;
     $('cups-note').hidden = unit !== 'cups';
 
     document.querySelectorAll('[data-amount]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.amount) === num('amount'))));
-    document.querySelectorAll('[data-hydration]').forEach((b) => b.setAttribute('aria-pressed', String(ratio !== 'custom' && Number(b.dataset.hydration) === num('hydration'))));
+    document.querySelectorAll('[data-hydration]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.hydration) === num('hydration'))));
     document.querySelectorAll('[data-mix]').forEach((b) => { const [w, r] = b.dataset.mix.split(',').map(Number); b.setAttribute('aria-pressed', String(w === wheat && r === rye)); });
 
     const res = computeFeed({
@@ -217,55 +235,58 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
     });
     state.res = res;
 
+    // Flag the field that caused an error.
+    const bad = res.ok ? [] : (FLAGGED[res.field] || []);
+    FIELDS.forEach((id) => { if (bad.includes(id)) $(id).setAttribute('aria-invalid', 'true'); else $(id).removeAttribute('aria-invalid'); });
+    $('copy').disabled = !res.ok;
+
     const note = $('note');
     note.classList.toggle('text-muted', res.ok);
     note.classList.toggle('text-red-700', !res.ok);
     note.classList.toggle('dark:text-red-400', !res.ok);
     if (!res.ok) {
-      ['out-starter', 'out-flour', 'out-water', 'out-total'].forEach((id) => { $(id).textContent = NA; });
-      $('flour-split').hidden = true;
+      ['out-starter', 'out-flour', 'out-water', 'out-total', 'bar-starter', 'bar-flour', 'bar-water'].forEach((id) => { $(id).textContent = NA; });
+      ['row-white', 'row-wheat', 'row-rye'].forEach((id) => { $(id).hidden = true; });
       note.textContent = res.error;
       $('peak').textContent = NA;
       $('peak-note').textContent = 'Fix the input to see a peak time.';
+      announce(res.error);
       return;
     }
 
-    $('out-starter').textContent = show(res.starter, 'starter', unit);
-    $('out-flour').textContent = show(res.flour.total, 'white', unit);
-    $('out-water').textContent = show(res.water, 'water', unit);
-    $('out-total').textContent = fmtG(res.total);
-
     const mixed = wheat > 0 || rye > 0;
-    $('flour-split').hidden = !mixed;
+    const starterTxt = show(res.starter, 'starter', unit);
+    const flourTxt = mixed && unit === 'cups' ? 'see below' : show(res.flour.total, 'white', unit);
+    const waterTxt = show(res.water, 'water', unit);
+    $('out-starter').textContent = starterTxt;
+    $('out-flour').textContent = flourTxt;
+    $('out-water').textContent = waterTxt;
+    $('out-total').textContent = fmtG(res.total);
+    $('bar-starter').textContent = starterTxt;
+    $('bar-flour').textContent = mixed && unit === 'cups' ? fmtG(res.flour.total) : flourTxt;
+    $('bar-water').textContent = waterTxt;
+
+    $('row-white').hidden = !mixed;
+    $('row-wheat').hidden = res.flour.wheat === 0;
+    $('row-rye').hidden = res.flour.rye === 0;
     if (mixed) {
       $('out-white').textContent = show(res.flour.white, 'white', unit);
       $('out-wheat').textContent = show(res.flour.wheat, 'wheat', unit);
       $('out-rye').textContent = show(res.flour.rye, 'rye', unit);
-      $('row-wheat').hidden = res.flour.wheat === 0;
-      $('row-rye').hidden = res.flour.rye === 0;
     }
 
-    const hydTxt = `${Math.round(res.hydration * 10) / 10}% hydration`;
-    note.textContent = mode === 'keep'
-      ? `Discard all but ${res.starter} g of starter, then add the flour and water. Ratio ${res.ratioLabel} by weight, ${hydTxt}.`
-      : `Mix ${res.starter} g of ripe starter with the flour and water to get ${res.total} g. Discard any extra starter first. Ratio ${res.ratioLabel} by weight, ${hydTxt}.`;
-    $('ratio-hint').textContent = ratio === 'custom'
-      ? `${res.ratioLabel} means ${[['starter', 'c-s'], ['flour', 'c-f'], ['water', 'c-w']].map(([n, id]) => `${$(id).value || 0} part${Number($(id).value) === 1 ? '' : 's'} ${n}`).join(', ')}, by weight.`
-      : `${ratio} means 1 part starter, ${ratio.split(':')[1]} parts flour and ${ratio.split(':')[2]} parts water, by weight.`;
+    note.textContent = feedNote(res);
+    $('ratio-hint').textContent = ratioHint(res);
+    announce(`Feed ${starterTxt} starter, ${flourTxt === 'see below' ? fmtG(res.flour.total) : flourTxt} flour and ${waterTxt} water.`);
 
     const t = num('temp');
-    const tC = tunit === 'F' ? fToC(t) : t;
-    const pk = peakTime(res.dilution, tC);
+    const pk = peakTime(res.dilution, state.tC);
     if (!pk.ok) {
       $('peak').textContent = NA;
       $('peak-note').textContent = 'Enter your kitchen temperature to see a rough peak time.';
     } else {
-      $('peak').textContent = formatHours(pk.low, pk.high);
-      let msg = `At ${Math.round(t * 10) / 10} °${tunit}. A guide only: your flour, starter and kitchen will change it. Watch the jar, not the clock.`;
-      if (pk.cold) msg = 'Below 59 °F (15 °C) a starter slows a lot, so this time is not reliable. Find a warmer spot.';
-      else if (pk.hot) msg = 'Above 95 °F (35 °C) a starter can struggle, so this time is not reliable. Find a cooler spot.';
-      else if (res.wholeGrainShare >= 30) msg += ' Whole grain flour often peaks sooner.';
-      $('peak-note').textContent = msg;
+      $('peak').textContent = pk.cold || pk.hot ? NA : peakText(res.dilution, cToF(state.tC));
+      $('peak-note').textContent = peakNote(pk, t, tunit, res.wholeGrainShare);
     }
   }
 
@@ -273,18 +294,39 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
   function setValue(id, v) { $(id).value = String(v); update(); }
 
   const root = $('tool');
-  root.addEventListener('input', update);
-  root.addEventListener('change', (e) => {
-    if (e.target.name === 'tunit') {
-      const t = num('temp');
-      const to = e.target.value;
-      if (Number.isFinite(t) && to !== state.lastTunit) $('temp').value = String(Math.round(to === 'C' ? fToC(t) : cToF(t)));
-      state.lastTunit = to;
+  root.addEventListener('input', (e) => {
+    if (e.target.id === 'temp') readTemp();
+    else if (e.target.name === 'tunit') {
+      // Convert from the exact Celsius value and round only for display.
+      if (Number.isFinite(state.tC)) $('temp').value = String(Math.round((e.target.value === 'F' ? cToF(state.tC) : state.tC) * 10) / 10);
     }
     update();
   });
 
-  root.addEventListener('click', (e) => {
+  function copyText(r, unit) {
+    const lines = [`Starter ${show(r.starter, 'starter', unit)}`];
+    if (r.flour.wheat || r.flour.rye) {
+      lines.push(`White flour ${show(r.flour.white, 'white', unit)}`);
+      if (r.flour.wheat) lines.push(`Whole wheat flour ${show(r.flour.wheat, 'wheat', unit)}`);
+      if (r.flour.rye) lines.push(`Rye flour ${show(r.flour.rye, 'rye', unit)}`);
+    } else lines.push(`Flour ${show(r.flour.total, 'white', unit)}`);
+    lines.push(`Water ${show(r.water, 'water', unit)}`, `Total ${fmtG(r.total)} (${r.ratioLabel})`);
+    return lines.join('\n');
+  }
+  // Old browsers and plain http pages have no clipboard API; fall back to a hidden textarea.
+  async function copyToClipboard(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch { return false; }
+  }
+
+  root.addEventListener('click', async (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.amount) setValue('amount', b.dataset.amount);
@@ -293,27 +335,24 @@ const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10', 'custom'];
       const [w, r] = b.dataset.mix.split(',');
       $('wheat').value = w; $('rye').value = r; update();
     } else if (b.id === 'amount-down' || b.id === 'amount-up') {
-      const a = num('amount');
-      const cur = Number.isFinite(a) ? a : 0;
-      const step = cur >= 200 ? 50 : cur >= 50 ? 10 : 5;
-      const next = b.id === 'amount-up' ? cur + step : Math.max(step, cur - step);
-      setValue('amount', Math.round(next * 100) / 100);
+      setValue('amount', nextAmount(num('amount'), b.id === 'amount-up' ? 'up' : 'down'));
     } else if (b.id === 'copy') {
       const r = state.res;
       if (!r || !r.ok) return;
-      const lines = [`Starter ${r.starter} g`];
-      if (r.flour.wheat || r.flour.rye) {
-        lines.push(`White flour ${r.flour.white} g`);
-        if (r.flour.wheat) lines.push(`Whole wheat flour ${r.flour.wheat} g`);
-        if (r.flour.rye) lines.push(`Rye flour ${r.flour.rye} g`);
-      } else lines.push(`Flour ${r.flour.total} g`);
-      lines.push(`Water ${r.water} g`, `Total ${r.total} g (${r.ratioLabel})`);
-      const done = () => { b.textContent = 'Copied'; $('copy-status').textContent = 'Amounts copied.'; setTimeout(() => { b.textContent = 'Copy amounts'; }, 1800); };
-      try { navigator.clipboard.writeText(lines.join('\n')).then(done, () => {}); } catch {}
+      const ok = await copyToClipboard(copyText(r, radio('unit')));
+      b.textContent = ok ? 'Copied' : 'Copy failed';
+      $('copy-status').textContent = ok ? 'Amounts copied.' : 'Copy failed. Select the amounts by hand.';
+      setTimeout(() => { b.textContent = 'Copy amounts'; $('copy-status').textContent = ''; }, 2500);
     }
   });
 
+  // Show the phone bar only while the full result card is off screen.
+  const bar = $('sticky-bar');
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => { bar.hidden = entry.isIntersecting; }, { threshold: 0.4 }).observe($('result'));
+  }
+
   load();
-  state.lastTunit = radio('tunit') || 'F';
+  readTemp();
   render();
 </script>

@@ -1,14 +1,18 @@
 ---
-import { computeFeed, peakTime, formatHours, fToC } from '../lib/starter.js';
+import { computeFeed, peakText, COLD_F, HOT_F } from '../lib/starter.js';
 
 const ratios = ['1:1:1', '1:2:2', '1:5:5', '1:10:10'];
 const rows = ratios.map((ratio) => {
   const r = computeFeed({ mode: 'keep', amount: 50, ratio, hydration: 100, mix: { wheat: 0, rye: 0 } });
-  const at = (f) => { const p = peakTime(r.dilution, fToC(f)); return formatHours(p.low, p.high).replace('about ', ''); };
+  const at = (f) => peakText(r.dilution, f, { bare: true });
   return { ratio, flour: r.flour.total, water: r.water, total: r.total, p68: at(68), p75: at(75), p82: at(82) };
 });
-const ex = computeFeed({ mode: 'total', amount: 120, ratio: '1:5:5', hydration: 100, mix: { wheat: 0, rye: 0 } });
-const pk = (f) => { const p = peakTime(ex.dilution, fToC(f)); return formatHours(p.low, p.high).replace('about ', ''); };
+const ex = computeFeed({ mode: 'total', amount: 110, ratio: '1:5:5', hydration: 100, mix: { wheat: 0, rye: 0 } });
+const pk = (f) => peakText(ex.dilution, f, { bare: true });
+const glance = [20, 50, 100, 200].map((amount) => {
+  const g = computeFeed({ mode: 'keep', amount, ratio: '1:5:5', hydration: 100, mix: { wheat: 0, rye: 0 } });
+  return { amount, flour: g.flour.total, water: g.water, total: g.total };
+});
 ---
 <section aria-labelledby="about-tool" class="mx-auto max-w-5xl px-4 pt-16">
   <article class="prose-site">
@@ -45,11 +49,25 @@ const pk = (f) => { const p = peakTime(ex.dilution, fToC(f)); return formatHours
       <li><strong>1:10:10</strong> suits an overnight feeding, or a warm kitchen where a smaller feed would peak too early.</li>
     </ul>
 
+    <h2>How much to feed 20 g, 50 g, 100 g or 200 g of starter</h2>
+    <p>These amounts use a 1:5:5 feeding at 100% hydration. Keep the starter amount in the jar, then add the flour and water.</p>
+    <div class="table-wrap">
+      <table>
+        <caption class="sr-only">Flour and water to add to common starter amounts at 1:5:5</caption>
+        <thead>
+          <tr><th scope="col">Starter you keep</th><th scope="col">Flour</th><th scope="col">Water</th><th scope="col">Total</th></tr>
+        </thead>
+        <tbody>
+          {glance.map((g) => <tr><th scope="row">{g.amount} g</th><td>{g.flour} g</td><td>{g.water} g</td><td>{g.total} g</td></tr>)}
+        </tbody>
+      </table>
+    </div>
+
     <h2>A worked example</h2>
-    <p>A bread recipe asks for 120 g of ripe starter. You feed at 1:5:5 and want exactly that amount. Choose <strong>Total I need</strong>, enter 120 and pick 1:5:5. The calculator gives {ex.starter} g of starter, {ex.flour.total} g of flour and {ex.water} g of water. Mix them in a clean jar and mark the level with a rubber band. In a 75 &deg;F kitchen, expect the peak in {pk(75)}. If your jar holds more starter than {ex.starter} g, discard the extra first.</p>
+    <p>A bread recipe asks for 110 g of ripe starter. You feed at 1:5:5 and want exactly that amount. Choose <strong>Total I need</strong>, enter 110 and pick 1:5:5. The calculator gives {ex.starter} g of starter, {ex.flour.total} g of flour and {ex.water} g of water. Mix them in a clean jar and mark the level with a rubber band. In a 75 &deg;F kitchen, expect the peak in {pk(75)}. If your jar holds more starter than {ex.starter} g, discard the extra first.</p>
 
     <h2>How temperature changes the timing</h2>
-    <p>Yeast works faster when it is warm. As a rule of thumb, the wait gets about half as long for every 18 &deg;F (10 &deg;C) of extra warmth. The same 1:5:5 feeding takes {pk(68)} at 68 &deg;F and {pk(82)} at 82 &deg;F. Below about 60 &deg;F the starter slows a lot. Above about 90 &deg;F it can turn sour and weak.</p>
+    <p>Yeast works faster when it is warm. As a rule of thumb, the wait gets about half as long for every 18 &deg;F (10 &deg;C) of extra warmth. The same 1:5:5 feeding takes {pk(68)} at 68 &deg;F and {pk(82)} at 82 &deg;F. Below {COLD_F} &deg;F the starter slows a lot. Above {HOT_F} &deg;F it can turn sour and weak.</p>
     <p>If your kitchen is cold, try the oven with only the light on, or the top of the fridge. Do not rely on the clock alone. A ripe starter has a domed top, many bubbles and a level that has about doubled. Feed it at or just after the peak.</p>
 
     <h2>Hydration and flour mix</h2>
