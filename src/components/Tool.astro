@@ -29,7 +29,7 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
       <label for="amount" id="amount-label" class="lbl">{d.mode === 'keep' ? 'Starter you keep (grams)' : 'Total starter you need (grams)'}</label>
       <div class="flex items-center gap-2">
         <button type="button" id="amount-down" class="step-btn" aria-label="Decrease amount">&minus;</button>
-        <input id="amount" class="field text-center text-xl font-semibold" type="number" inputmode="decimal" min="1" step="any" value={d.amount} autocomplete="off" aria-describedby="note" />
+        <input id="amount" class="field text-center text-xl font-semibold" type="text" inputmode="decimal" value={d.amount} autocomplete="off" aria-describedby="note" />
         <button type="button" id="amount-up" class="step-btn" aria-label="Increase amount">+</button>
       </div>
       <p id="amount-hint" class="hint">{d.mode === 'keep' ? 'The starter left in the jar after you discard.' : 'The weight of fed starter you want. For a recipe that asks for 120 g of levain, enter 120.'}</p>
@@ -42,7 +42,7 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
 
     <div class="mt-5">
       <label for="jar" class="lbl">Starter in my jar now (grams, optional)</label>
-      <input id="jar" class="field" type="number" inputmode="decimal" min="0" step="any" placeholder="For example 300" value={d.jar} autocomplete="off" aria-describedby="jar-line" />
+      <input id="jar" class="field" type="text" inputmode="decimal" placeholder="For example 300" value={d.jar} autocomplete="off" aria-describedby="jar-line" />
       <p class="hint">Weigh the jar, then subtract the empty jar. We use it to tell you how much to discard.</p>
     </div>
 
@@ -54,9 +54,9 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
         ))}
       </div>
       <div id="custom" class="mt-3 grid grid-cols-3 gap-2" hidden>
-        <div><label for="c-s" class="lbl">Starter</label><input id="c-s" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value={d.custom.s} aria-describedby="note" /></div>
-        <div><label for="c-f" class="lbl">Flour</label><input id="c-f" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value={d.custom.f} aria-describedby="note" /></div>
-        <div><label for="c-w" class="lbl">Water</label><input id="c-w" class="field text-center" type="number" inputmode="decimal" min="0" step="any" value={d.custom.w} aria-describedby="note" /></div>
+        <div><label for="c-s" class="lbl">Starter</label><input id="c-s" class="field text-center" type="text" inputmode="decimal" value={d.custom.s} aria-describedby="note" /></div>
+        <div><label for="c-f" class="lbl">Flour</label><input id="c-f" class="field text-center" type="text" inputmode="decimal" value={d.custom.f} aria-describedby="note" /></div>
+        <div><label for="c-w" class="lbl">Water</label><input id="c-w" class="field text-center" type="text" inputmode="decimal" value={d.custom.w} aria-describedby="note" /></div>
       </div>
       <p id="ratio-hint" class="hint">{ratioHint(r)}</p>
       <p class="hint"><span id="ratio-flavor">{ratioFlavor(d.ratio)}</span> <a href={href('') + '#ratio-meaning'} class="underline underline-offset-2">1:1:1 versus 1:5:5</a></p>
@@ -133,7 +133,7 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
 
     <div id="hyd-block" class="mt-4">
       <label for="hydration" class="lbl">Hydration (water as % of flour)</label>
-      <input id="hydration" class="field" type="number" inputmode="decimal" min="40" max="150" step="any" value={d.hydration} autocomplete="off" aria-describedby="note" />
+      <input id="hydration" class="field" type="text" inputmode="decimal" value={d.hydration} autocomplete="off" aria-describedby="note" />
       <div class="mt-2 flex flex-wrap gap-2" role="group" aria-label="Common hydration values">
         {[100, 80, 60].map((n) => <button type="button" class="chip" data-hydration={n} aria-pressed={n === d.hydration ? 'true' : 'false'}>{n}%{n === 100 ? ' liquid' : n === 60 ? ' stiff' : ''}</button>)}
       </div>
@@ -143,7 +143,7 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
     <div id="temp-block" class="mt-5">
       <label for="temp" class="lbl">Kitchen temperature</label>
       <div class="flex items-center gap-2">
-        <input id="temp" class="field" type="number" inputmode="decimal" step="any" value={d.tempF} autocomplete="off" />
+        <input id="temp" class="field" type="text" inputmode="decimal" value={d.tempF} autocomplete="off" />
         <fieldset class="w-36 shrink-0">
           <legend class="sr-only">Temperature unit</legend>
           <div class="seg">
@@ -178,8 +178,8 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
           <button type="button" class="chip" data-mix="0,10" aria-pressed="false">90% white, 10% rye</button>
         </div>
         <div class="mt-3 grid grid-cols-2 gap-3">
-          <div><label for="wheat" class="lbl">Whole wheat %</label><input id="wheat" class="field" type="number" inputmode="decimal" min="0" max="100" step="any" value="0" aria-describedby="note" /></div>
-          <div><label for="rye" class="lbl">Rye %</label><input id="rye" class="field" type="number" inputmode="decimal" min="0" max="100" step="any" value="0" aria-describedby="note" /></div>
+          <div><label for="wheat" class="lbl">Whole wheat %</label><input id="wheat" class="field" type="text" inputmode="decimal" value="0" aria-describedby="note" /></div>
+          <div><label for="rye" class="lbl">Rye %</label><input id="rye" class="field" type="text" inputmode="decimal" value="0" aria-describedby="note" /></div>
         </div>
         <p id="white-pct" class="hint">White flour (all-purpose or bread): 100%</p>
       </div>
@@ -202,7 +202,14 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
   const $ = (id) => document.getElementById(id);
   const radio = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value;
   const setRadio = (name, v) => { const el = document.querySelector(`input[name="${name}"][value="${v}"]`); if (el) el.checked = true; };
-  const num = (id) => { const v = $(id).value.trim(); return v === '' ? NaN : Number(v); };
+  // Accepts "7.5", "7,5" (decimal comma) and "1,500" (thousands comma). Anything else is NaN.
+  const parseLoose = (raw) => {
+    let v = raw.trim();
+    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(v)) v = v.replace(/,/g, '');
+    else if (/^\d+,\d+$/.test(v)) v = v.replace(',', '.');
+    return v === '' ? NaN : Number(v);
+  };
+  const num = (id) => parseLoose($(id).value);
   const KEY = 'ssc-v1';
   const FIELDS = ['amount', 'jar', 'fedat', 'readyby', 'c-s', 'c-f', 'c-w', 'hydration', 'temp', 'wheat', 'rye'];
   const RADIOS = ['mode', 'ratio', 'unit', 'tunit'];
@@ -273,8 +280,10 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
     const ratio = radio('ratio');
     const unit = radio('unit');
     const tunit = radio('tunit');
-    const wheat = num('wheat') || 0;
-    const rye = num('rye') || 0;
+    // An empty box means 0. Letters stay NaN, so the mix is flagged as an error.
+    const pct = (id) => ($(id).value.trim() === '' ? 0 : num(id));
+    const wheat = pct('wheat');
+    const rye = pct('rye');
 
     $('amount-label').textContent = mode === 'keep' ? 'Starter you keep (grams)' : 'Total starter you need (grams)';
     $('amount-hint').textContent = mode === 'keep'
@@ -282,7 +291,7 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
       : 'The weight of fed starter you want, for example what a recipe needs.';
     $('custom').hidden = ratio !== 'custom';
     $('hyd-block').hidden = ratio === 'custom';
-    $('white-pct').textContent = `White flour (all-purpose or bread): ${Math.max(0, Math.round((100 - wheat - rye) * 10) / 10)}%`;
+    $('white-pct').textContent = `White flour (all-purpose or bread): ${Number.isFinite(wheat + rye) ? `${Math.max(0, Math.round((100 - wheat - rye) * 10) / 10)}%` : NA}`;
     $('cups-note').hidden = unit !== 'cups';
     document.querySelectorAll('[data-chips]').forEach((g) => { g.hidden = g.dataset.chips !== mode; });
     $('ratio-flavor').textContent = ratioFlavor(ratio);
@@ -292,7 +301,7 @@ const liveText = `Feed ${r.starter} g starter, ${r.flour.total} g flour and ${r.
     document.querySelectorAll('[data-mix]').forEach((b) => { const [w, r] = b.dataset.mix.split(',').map(Number); b.setAttribute('aria-pressed', String(w === wheat && r === rye)); });
 
     const res = computeFeed({
-      mode, amount: num('amount'), jar: $('jar').value.trim(), ratio, hydration: num('hydration'),
+      mode, amount: num('amount'), jar: $('jar').value.trim() === '' ? '' : (Number.isNaN(num('jar')) ? Infinity : num('jar')), ratio, hydration: num('hydration'),
       custom: { s: num('c-s'), f: num('c-f'), w: num('c-w') },
       mix: { wheat, rye },
     });
