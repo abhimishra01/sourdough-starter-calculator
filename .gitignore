@@ -1,4 +1,9 @@
 node_modules
 dist
+dist-*/
+tmp-*/
 .astro
 .wrangler
+.playwright-cli/
+screenshots/
+.DS_Store
