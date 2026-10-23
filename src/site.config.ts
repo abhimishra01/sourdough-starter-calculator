@@ -25,5 +25,5 @@ export default {
   locale: 'en-US',                    // BCP 47 language tag
   ogImage: '/og.png',                        // e.g. '/og.png' (1200x630 file in public/). Empty = no image
   category: 'LifestyleApplication',   // schema.org applicationCategory
-  owner: bingemind ? 'Bingemind' : 'Starter Feeding Calculator',                // name used in legal pages (person or business)
+  owner: bingemind ? 'Bingemind (Abhishek Mishra)' : 'Starter Feeding Calculator',                // name used in legal pages (person or business)
 };
